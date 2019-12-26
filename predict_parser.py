@@ -45,12 +45,3 @@ def restructure(data, candidates):
         full_table = full_table.append(single_row)
         single_row = pd.DataFrame([empty_data])
     return full_table
-    
-
-candidates = ["Biden","Warren","Sanders","Buttigieg","Klobuchar","Yang","Booker","Steyer","Bloomberg"]
-raw_data = "PredictItData.csv"
-data = processData(raw_data, candidates)
-export_csv = data.to_csv(r'processedPredictIt.csv', index = None, header=True)
-print(data)
-
-input(".")
