@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy
+import copy
 
 def processData(raw_data, candidates):
     raw_data = pd.read_csv(raw_data)
@@ -17,18 +18,18 @@ def removeIrrelevants(data, candidates):
     
 def convertDates(data):
     numbering = -1
-    previousDate = ""
+    previous_date = ""
     for index, row in data.iterrows():
-        if (row['Date'] is previousDate):
+        if (row['Date'] == previous_date):
             data.at[index,'Date'] = numbering
         else:
-            previousDate = row['Date']
+            previous_date = row['Date']
             numbering = numbering+1
             data.at[index,'Date'] = numbering
     return data
     
 def restructure(data, candidates):
-    column_names = candidates
+    column_names = copy.deepcopy(candidates)
     column_names.insert(0,'Date')
     column_names.append('Price')
     zeros = [0] * len(column_names)

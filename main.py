@@ -6,9 +6,14 @@ from trends_parser import *
 #Set these values only
 directory = "data/"
 candidates = ["Biden","Warren","Sanders","Buttigieg","Klobuchar","Yang","Booker","Steyer","Bloomberg"]
-predictit_data = "PredictItData.csv"
-data = processData(directory + predictit_data, candidates)
+startYear = 2019
+startMonth = 10
+endYear = 2019
+endMonth = 12
+predictit_file = "PredictItData.csv"
+predictit_data = processData(directory + predictit_file, candidates)
 #export_csv = data.to_csv(r'processedPredictIt.csv', index = None, header=True)
 ## Export to save time if desired
-print(data)
+trends_data = processTrends(candidates, startYear, startMonth, endYear, endMonth)
+print(trends_data)
 input(".")
