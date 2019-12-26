@@ -1,0 +1,25 @@
+SUCCESS CASE:
+Predicted 'off-value' is within 10% of true 'off-value,' and shares the same sign.
+Advanced: Of all the cases with >10% 'off-value' in the positive direction, ensure 
+that predictions and reality are both > 10%.
+
+FEATURES:
+1) Day (starting from June 1, 2019)
+2) Google Trends Change from Previous Day
+3) Is JB?
+4) Is BS?
+5) Is TG?
+6) Is JC?
+7) Is PB?
+8) Is EW?
+9) Is AW?
+10) Is TS?
+11) Is MB?
+12) Is CB?
+13) Is AK?
+14) Is Progressive Wing?
+15) Cash on hand
+16) Polling average (according to RCP)
+
+Could imagine altering the above in some manner, but these should be adequate for now - especially if NN is used,
+or some combination of features.]
