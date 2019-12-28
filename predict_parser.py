@@ -7,7 +7,9 @@ def processData(raw_data, candidates):
     parsed_data = raw_data.drop(columns = ["OpenSharePrice","HighSharePrice","LowSharePrice", "TradeVolume"])
     parsed_data = removeIrrelevants(parsed_data, candidates)
     parsed_data = convertDates(parsed_data)
-    final_table = restructure(parsed_data, candidates)
+    restructured_table = restructure(parsed_data, candidates)
+    final_table = createDifferential(restructured_table, candidates)
+    print(final_table)
     return final_table
     
 def removeIrrelevants(data, candidates):
@@ -46,3 +48,19 @@ def restructure(data, candidates):
         full_table = full_table.append(single_row)
         single_row = pd.DataFrame([empty_data])
     return full_table
+    
+def createDifferential(data, candidates):
+    push_length = len(candidates)*5
+    row_count = len(data.index)
+    initialized_rows = [0] * row_count
+    data.insert(len(data.columns), "Predictions Diff", initialized_rows, True)
+    new_data = data.shift(periods=push_length)
+    current_prices = data.loc[:,['Price']]
+    late_prices = new_data.loc[:,['Price']]
+    current_prices['Price'] = current_prices['Price'].str.replace('$', '')
+    late_prices['Price'] = late_prices['Price'].str.replace('$', '')
+    diff = current_prices.astype(float) - late_prices.astype(float)
+    data["Predictions Diff"] = diff
+    return data
+            
+            
