@@ -1,11 +1,14 @@
 from pytrends.dailydata import *
 import pandas as pd
 import numpy
+from sklearn.preprocessing import MinMaxScaler
 
 def processTrends(candidates, startYear, startMonth, endYear, endMonth):
     df_list = []
     for candidate in candidates:
         df = pd.DataFrame(get_daily_data(candidate, startYear, startMonth, endYear, endMonth))
+        scaler = MinMaxScaler()
+        df[[candidate]] = scaler.fit_transform(df[[candidate]])
         parsed_data = df.drop(columns = [candidate + "_monthly",candidate + "_unscaled","isPartial", "scale"])
         parsed_data.reset_index(level=0, inplace=True) 
         parsed_data["date"] = parsed_data["date"].apply(lambda x: x.strftime('%Y/%m/%d'))        

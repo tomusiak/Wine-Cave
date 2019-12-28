@@ -9,7 +9,6 @@ def processData(raw_data, candidates):
     parsed_data = convertDates(parsed_data)
     restructured_table = restructure(parsed_data, candidates)
     final_table = createDifferential(restructured_table, candidates)
-    print(final_table)
     return final_table
     
 def removeIrrelevants(data, candidates):
@@ -59,7 +58,7 @@ def createDifferential(data, candidates):
     late_prices = new_data.loc[:,['Price']]
     current_prices['Price'] = current_prices['Price'].str.replace('$', '')
     late_prices['Price'] = late_prices['Price'].str.replace('$', '')
-    diff = current_prices.astype(float) - late_prices.astype(float)
+    diff = (current_prices.astype(float) - late_prices.astype(float))/current_prices.astype(float)
     data["Predictions Diff"] = diff
     return data
             
