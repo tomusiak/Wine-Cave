@@ -2,6 +2,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import loadtxt
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.wrappers.scikit_learn import KerasRegressor
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 directory = "data/"
 data_file = "FinalCombined.csv"
@@ -41,6 +48,11 @@ def main():
     data["ML MODEL"] = prediction
     data = data[data["Pete Buttigieg"]==1]
     export_csv = data.to_csv(r'prediction.csv', index = None, header=False)
+    estimator = KerasRegressor(build_fn=baseline_model, epochs=100, batch_size=5, verbose=0)
+    kfold = KFold(n_splits=10)
+    results = cross_val_score(estimator, x, y, cv=kfold)
+    print("Baseline: %.2f (%.2f) MSE" % (results.mean(), results.std()))
+    print(results)
     
 
 def computeCost(x, y, theta):
@@ -71,4 +83,14 @@ def normalEqn(x,y,theta):
     
 def neuralNetwork(x,y,theta):
     return 0  
+
+def baseline_model():
+	# create model
+	model = Sequential()
+	model.add(Dense(12, input_dim=12, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	model.compile(loss='mean_squared_error', optimizer='adam')
+	return model
+
 main()
