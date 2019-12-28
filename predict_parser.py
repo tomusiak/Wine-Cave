@@ -60,6 +60,7 @@ def createDifferential(data, candidates):
     late_prices['Price'] = late_prices['Price'].str.replace('$', '')
     diff = (current_prices.astype(float) - late_prices.astype(float))/current_prices.astype(float)
     data["Predictions Diff"] = diff
+    data["Price"] = data["Price"].str.replace('$', '')
     return data
             
             

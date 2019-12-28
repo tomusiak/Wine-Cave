@@ -17,4 +17,3 @@ trends_data = processTrends(candidates, startYear, startMonth, endYear, endMonth
 combined_data = combineData(predictit_data, trends_data, candidates)
 export_csv = combined_data.to_csv(r'data\FinalCombined.csv', index = None, header=True)
 print(combined_data)
-input(".")
