@@ -2,13 +2,15 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import loadtxt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+from sklearn import preprocessing
+
+# Keras specific
+import keras
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 
 directory = "data/"
 data_file = "FinalCombined.csv"
@@ -26,40 +28,37 @@ def cleanData(data):
 
 def main():
     data = pd.read_csv(directory + data_file)
-    #trial = data[data["Joe Biden"]==1]
-    #data = trial
-    data = data.drop(columns=["Price"])
+    data = data[data["Joe Biden"]==1]
+    #data = data.drop(columns=["Price"])
     x, y = cleanData(data)
-    rows = len(x.index)
-    columns = len(x.columns)
+    x = pd.DataFrame(x)
+    x = x.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    x = pd.DataFrame(x_scaled)
+    num_rows = len(x.index)
+    num_columns = len(x.columns)
     x = x.to_numpy()
-    #export_csv = y.to_csv(r'realvalues.csv', index = None, header=False)
     y = y.to_numpy()
-    theta = np.zeros((1,columns))
-    #theta, history = gradientDescent(x,y,theta,alpha,iterations)
-    #dataframe = pd.DataFrame(history)
-    #dataframe.plot()
-    #plt.show()
-    theta = normalEqn(x,y,theta)
+    theta = np.zeros((1,num_columns))
+    #theta = gradientDescent(x,y,theta,alpha,iterations)
+    #theta = normalEqn(x,y,theta)
+    neuralNetwork(x,y);
     prediction = np.dot(x,np.transpose(theta))
     prediction = pd.DataFrame(prediction)
-    initialized_rows = [0] * rows
-    data.insert(len(data.columns), "ML MODEL", initialized_rows, True)
-    data["ML MODEL"] = prediction
-    data = data[data["Pete Buttigieg"]==1]
-    export_csv = data.to_csv(r'prediction.csv', index = None, header=False)
-    estimator = KerasRegressor(build_fn=baseline_model, epochs=100, batch_size=5, verbose=0)
-    kfold = KFold(n_splits=10)
-    results = cross_val_score(estimator, x, y, cv=kfold)
-    print("Baseline: %.2f (%.2f) MSE" % (results.mean(), results.std()))
-    print(results)
+    initialized_rows = [0] * num_rows
+    data.insert(len(data.columns), "Predicted Values", initialized_rows, True)
+    data["Predicted Values"] = prediction
+    data = data[data["Joe Biden"]==1]
+    export_csv = data.to_csv(r'prediction.csv', index = None, header=True)
+    
     
 
 def computeCost(x, y, theta):
     m = len(y)
     predictions = theta.dot(np.transpose(x))
     y = np.transpose(y)
-    cost = (1/2*m) * np.sum(np.square(predictions-y))
+    cost = (1/(2*m)) * np.sum(np.square(predictions-y))
     return cost
     
 def gradientDescent(x, y, theta, alpha, iterations):
@@ -71,7 +70,10 @@ def gradientDescent(x, y, theta, alpha, iterations):
         prediction = np.dot(x,np.transpose(theta))
         theta = theta - (1/m) * alpha * (np.transpose((prediction-y)).dot(x))
         cost_history[i] = computeCost(x,y,theta)
-    return theta, cost_history
+    dataframe = pd.DataFrame(history)
+    dataframe.plot()
+    plt.show()
+    return theta
     
 def normalEqn(x,y,theta):
     x_transpose = np.transpose(x)
@@ -80,17 +82,27 @@ def normalEqn(x,y,theta):
     temp_2=x_transpose.dot(y)
     theta =temp_1.dot(temp_2)
     return theta
-    
-def neuralNetwork(x,y,theta):
-    return 0  
 
-def baseline_model():
-	# create model
-	model = Sequential()
-	model.add(Dense(12, input_dim=12, kernel_initializer='normal', activation='relu'))
-	model.add(Dense(1, kernel_initializer='normal'))
-	# Compile model
-	model.compile(loss='mean_squared_error', optimizer='adam')
-	return model
+def neuralNetwork(x,y):
+    x = pd.DataFrame(x)
+x = x.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    x = pd.DataFrame(x_scaled)
+    y = pd.DataFrame(y)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=40)
+    model = Sequential()
+    model.add(Dense(500, input_dim=13, activation= "relu"))
+    model.add(Dense(100, activation= "relu"))
+    model.add(Dense(50, activation= "relu"))
+    model.add(Dense(1))
+    model.compile(loss= "mae" , optimizer="adam", metrics=["mae"])
+    model.fit(X_train, y_train, epochs=200)
+    pred_train= model.predict(X_train)
+    pred= model.predict(X_test)
+    pred = pd.DataFrame(pred)
+    y_test = pd.DataFrame(y_test)
+    y_test.to_csv(r'testings.csv',index=None,header=False)
+    pred.to_csv(r'idk.csv',index=None,header = False)
 
 main()
