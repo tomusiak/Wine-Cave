@@ -14,68 +14,99 @@ from keras.layers import Dense
 
 directory = "data/"
 data_file = "FinalCombined.csv"
-iterations = 100000;
-alpha = 0.0001;
+iterations = 10000;
+alpha = 0.01;
 
-def cleanData(data):
-    y = data.iloc[:,-1]
-    x = data
-    x = x.iloc[:, :-1]
+def addIntercept(x):
     row_count = len(x.index)
     initialized_rows = [1] * row_count
     x.insert(0, "Intercept", initialized_rows, True)
+    x = pd.DataFrame(x)
+    return x
+
+def dropFeatures(data, featureList):
+    data = data.drop(columns=featureList)
+    return data
+
+def cleanData(data):
+    y = data.iloc[:,-1]
+    x = data.iloc[:, :-1]
+    x = pd.DataFrame(x)
+    x = x.values
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x = min_max_scaler.fit_transform(x)
+    x = pd.DataFrame(x)
     return x, y
+
+def splitData(x,y,proportion):
+    row_count = len(x.index)
+    y = pd.DataFrame(y)
+    x = pd.DataFrame(x)
+    data = x
+    data['y'] = y
+    shuffledData= data.sample(frac=1)
+    split = round(row_count*proportion)
+    testData = shuffledData.head(split)
+    trainingData = shuffledData.tail(row_count-split)
+    y_train = pd.DataFrame(trainingData.iloc[:,-1])
+    x_train = pd.DataFrame(trainingData.iloc[:, :-1])
+    y_test = pd.DataFrame(testData.iloc[:,-1])
+    x_test = pd.DataFrame(testData.iloc[:,:-1])
+    return x_train, y_train, x_test, y_test
 
 def main():
     data = pd.read_csv(directory + data_file)
-    data = data[data["Joe Biden"]==1]
-    #data = data.drop(columns=["Price"])
+    data = dropFeatures(data,["Price"])
     x, y = cleanData(data)
-    x = pd.DataFrame(x)
-    x = x.values #returns a numpy array
-    min_max_scaler = preprocessing.MinMaxScaler()
-    x_scaled = min_max_scaler.fit_transform(x)
-    x = pd.DataFrame(x_scaled)
-    num_rows = len(x.index)
-    num_columns = len(x.columns)
-    x = x.to_numpy()
-    y = y.to_numpy()
-    theta = np.zeros((1,num_columns))
-    #theta = gradientDescent(x,y,theta,alpha,iterations)
-    #theta = normalEqn(x,y,theta)
-    neuralNetwork(x,y);
-    prediction = np.dot(x,np.transpose(theta))
+    x_train, y_train, x_test, y_test = splitData(x,y,proportion = .20)
+    print("Starting")
+    gradient_descent_predictions = gradientDescentPrediction(x_train,y_train,x_test,y_test)
+    print("Gradient Descent Done")
+    #normal_equation_predictions = normalEquationPrediction(x_train,y_train,x_test,y_test)
+    print("Normal Equation Done")
+    #regression_nn_predictions = regressionNNPrediction(x_train,y_train, x_test, y_test)
+    print("Regression NN done")
+    
+def gradientDescentPrediction(x_train,y_train, x_test, y_test):
+    x_train = addIntercept(x_train)
+    x_test = addIntercept(x_test)
+    theta = gradientDescent(x_train,y_train,alpha,iterations)
+    prediction = np.dot(x_test,np.transpose(theta))
     prediction = pd.DataFrame(prediction)
-    initialized_rows = [0] * num_rows
-    data.insert(len(data.columns), "Predicted Values", initialized_rows, True)
-    data["Predicted Values"] = prediction
-    data = data[data["Joe Biden"]==1]
-    export_csv = data.to_csv(r'prediction.csv', index = None, header=True)
-    
-    
+    print(x_train.dtypes)
+    print(y_train.dtypes)
+    print(x_test.dtypes)
+    print(y_test.dtypes)
+    print(prediction.dtypes)
+    return prediction
 
-def computeCost(x, y, theta):
-    m = len(y)
-    predictions = theta.dot(np.transpose(x))
-    y = np.transpose(y)
-    cost = (1/(2*m)) * np.sum(np.square(predictions-y))
-    return cost
-    
-def gradientDescent(x, y, theta, alpha, iterations):
+def gradientDescent(x, y, alpha, iterations):
+    theta = np.zeros((1,len(x.columns)))
     m = len(y)
     cost_history = np.zeros(iterations)
     y = np.matrix(y)
-    y = np.transpose(y)
     for i in range (iterations):
-        prediction = np.dot(x,np.transpose(theta))
-        theta = theta - (1/m) * alpha * (np.transpose((prediction-y)).dot(x))
-        cost_history[i] = computeCost(x,y,theta)
-    dataframe = pd.DataFrame(history)
+        predictions = np.dot(x,np.transpose(theta))
+        theta = theta - (1/m) * alpha * (np.transpose((predictions-y)).dot(x))
+        cost_history[i] = computeCost(predictions, y, m)
+    dataframe = pd.DataFrame(cost_history)
     dataframe.plot()
     plt.show()
+    theta = pd.DataFrame(theta)
     return theta
+
+def computeCost(predictions, y, m):
+    cost = (1/(2*m)) * np.sum(np.square(predictions-y))
+    return cost
+
+def normalEquationPrediction(x_train, y_train, x_test, y_test):
+    theta = np.zeros((1,len(x_train.columns)))
+    theta = normalEqn(x_train,y_train)
+    prediction = np.dot(x_test,np.transpose(theta))
+    return prediction
     
-def normalEqn(x,y,theta):
+def normalEqn(x,y):
+    x = addIntercept(x)
     x_transpose = np.transpose(x)
     x_transpose_dot_x = x_transpose.dot(x)
     temp_1 = np.linalg.inv(x_transpose_dot_x)
@@ -83,26 +114,19 @@ def normalEqn(x,y,theta):
     theta =temp_1.dot(temp_2)
     return theta
 
-def neuralNetwork(x,y):
-    x = pd.DataFrame(x)
-x = x.values #returns a numpy array
-    min_max_scaler = preprocessing.MinMaxScaler()
-    x_scaled = min_max_scaler.fit_transform(x)
-    x = pd.DataFrame(x_scaled)
-    y = pd.DataFrame(y)
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=40)
+def regressionNNPrediction(x_train, y_train, x_test, y_test):
+    prediction = regression_NN(x_train, y_train, x_test)
+    return prediction
+
+def regression_NN(x_train, y_train, x_test):
     model = Sequential()
-    model.add(Dense(500, input_dim=13, activation= "relu"))
+    model.add(Dense(500, input_dim=11, activation= "relu"))
     model.add(Dense(100, activation= "relu"))
     model.add(Dense(50, activation= "relu"))
     model.add(Dense(1))
     model.compile(loss= "mae" , optimizer="adam", metrics=["mae"])
-    model.fit(X_train, y_train, epochs=200)
-    pred_train= model.predict(X_train)
-    pred= model.predict(X_test)
-    pred = pd.DataFrame(pred)
-    y_test = pd.DataFrame(y_test)
-    y_test.to_csv(r'testings.csv',index=None,header=False)
-    pred.to_csv(r'idk.csv',index=None,header = False)
-
+    model.fit(x_train, y_train, epochs=100)
+    pred = model.predict(x_test)
+    return pred
+        
 main()
