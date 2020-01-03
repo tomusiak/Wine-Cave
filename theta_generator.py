@@ -8,7 +8,7 @@ import copy
 
 directory = "data/"
 data_file = "FinalCombined.csv"
-iterations = 10000;
+iterations = 20000;
 alpha = 0.01;
 
 def addIntercept(x):
@@ -55,8 +55,12 @@ def main():
     print("Gradient Descent Done")
     normalEquationPrediction(x_train,y_train,x_test,y_test)
     print("Normal Equation Done")
-    regressionNNPrediction(x_train,y_train, x_test, y_test)
+    #regressionNNPrediction(x_train,y_train, x_test, y_test)
     print("Regression NN done")
+    cat_y_train = categoricalTransform(y_train, cutoff=.1)
+    cat_y_test = categoricalTransform(y_test, cutoff=.1)
+    categoricalNNPrediction(x_train,cat_y_train,x_test,cat_y_test)
+    print("Categorical NN done")
     
 def gradientDescentPrediction(x_train,y_train, x_test, y_test):
     gradient_x_train = copy.deepcopy(x_train)
@@ -112,21 +116,43 @@ def normalEqn(x,y):
     return theta
 
 def regressionNNPrediction(x_train, y_train, x_test, y_test):
-    prediction = regression_NN(x_train, y_train, x_test)
+    prediction = regressionNN(x_train, y_train, x_test)
     exportPredictions(x_test,y_test,prediction,"regression_neuralnetwork")
 
-def regression_NN(x_train, y_train, x_test):
+def regressionNN(x_train, y_train, x_test):
     feature_count = len(x_train.columns)
+    row_count = len(x_train.index)
     model = Sequential()
-    model.add(Dense(500, input_dim=feature_count, activation= "relu"))
-    model.add(Dense(100, activation= "relu"))
-    model.add(Dense(100, activation= "relu"))
-    model.add(Dense(50, activation= "relu"))
-    model.add(Dense(1))
+    model.add(Dense(row_count, input_dim=feature_count, activation= "relu"))
+    model.add(Dense(round(row_count/2), activation= "relu"))
+    model.add(Dense(round(row_count/4), activation= "relu"))
+    model.add(Dense(2))
     model.compile(loss= "mse" , optimizer="adam", metrics=["mse"])
     model.fit(x_train, y_train, epochs=200, verbose=0)
     pred = model.predict(x_test)
     return pred
+
+def categoricalNNPrediction(x_train,y_train,x_test,y_test):
+    prediction = categoricalNN(x_train,y_train,x_test)
+    exportPredictions(x_test,y_test,prediction,"categorical_neuralnetwork")
+    
+def categoricalNN(x_train, y_train, x_test):
+    feature_count = len(x_train.columns)
+    row_count = len(x_train.index)
+    model = Sequential()
+    model.add(Dense(row_count, input_dim=feature_count, activation="relu"))
+    model.add(Dense(round(row_count/2), activation= "relu"))
+    model.add(Dense(round(row_count/4), activation= "relu"))
+    model.add(Dense(1, activation = "sigmoid"))
+    model.compile(loss= "binary_crossentropy" , optimizer="adam", metrics=["accuracy"])
+    model.fit(x_train, y_train, epochs=200, verbose = 0)
+    pred = model.predict(x_test)
+    pred = (pred > .90).astype(int)
+    return pred
+    
+def categoricalTransform(y, cutoff):
+    newY = (y > .10).astype(int)
+    return newY
 
 def exportPredictions(x_test, y_test, prediction, prediction_type):
     data = x_test
