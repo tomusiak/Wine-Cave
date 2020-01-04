@@ -4,7 +4,7 @@ import copy
 
 def processData(raw_data, candidates):
     raw_data = pd.read_csv(raw_data)
-    parsed_data = raw_data.drop(columns = ["OpenSharePrice","HighSharePrice","LowSharePrice", "TradeVolume"])
+    parsed_data = raw_data.drop(columns = ["OpenSharePrice","HighSharePrice","LowSharePrice"])
     parsed_data = removeIrrelevants(parsed_data, candidates)
     parsed_data = convertDates(parsed_data)
     restructured_table = restructure(parsed_data, candidates)
@@ -33,6 +33,7 @@ def restructure(data, candidates):
     column_names = copy.deepcopy(candidates)
     column_names.insert(0,'Date')
     column_names.append('Price')
+    column_names.append('TradeVolume')
     zeros = [0] * len(column_names)
     empty_data = dict(zip(column_names,zeros))
     single_row = pd.DataFrame([empty_data])
@@ -41,9 +42,11 @@ def restructure(data, candidates):
         date = row['Date']
         name = row['ContractName']
         price = row['CloseSharePrice']
+        volume = row['TradeVolume']
         single_row['Date'] = date
         single_row[name] = 1
         single_row['Price'] = price
+        single_row['TradeVolume'] = volume
         full_table = full_table.append(single_row)
         single_row = pd.DataFrame([empty_data])
     return full_table
@@ -53,7 +56,7 @@ def createDifferential(data, candidates):
     row_count = len(data.index)
     initialized_rows = [0] * row_count
     data.insert(len(data.columns), "Predictions Diff", initialized_rows, True)
-    new_data = data.shift(periods=push_length)
+    new_data = data.shift(periods=-push_length)
     current_prices = data.loc[:,['Price']]
     late_prices = new_data.loc[:,['Price']]
     current_prices['Price'] = current_prices['Price'].str.replace('$', '')

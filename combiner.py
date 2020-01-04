@@ -20,6 +20,6 @@ def combineData(predictit_data, trends_data, candidates):
                         if (predictDate == trendDate):
                                 trends_list.append(row2[candidate_name_in_trends])
     combined_data["Trends"] = trends_list
-    dropfirst = len(candidates)*5
-    combined_data = combined_data.iloc[dropfirst:]
+    num_delete = len(candidates)*5*-1
+    combined_data = combined_data[:num_delete]
     return combined_data
